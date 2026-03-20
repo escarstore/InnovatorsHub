@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="InnovatorsHub Uganda — The community for tech engineers and software developers. Share innovations, learn, and connect.">
+  <meta property="og:title" content="InnovatorsHub Uganda">
+  <meta property="og:description" content="Uganda's tech engineering & software development community.">
+  <title>InnovatorsHub Uganda</title>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- ═══════════════════════════════════════════════════════
+  TOAST CONTAINER
+═══════════════════════════════════════════════════════ -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+  PAGE: LANDING
+═══════════════════════════════════════════════════════ -->
+<div id="page-landing" class="page active">
+  <nav class="landing-nav">
+    <div class="landing-logo">Innovators<em>Hub</em></div>
+    <div class="flex gap-2 items-center">
+      <button class="btn btn-ghost btn-sm" onclick="openAuthModal(); switchAuthTab('login')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="openAuthModal(); switchAuthTab('signup')">Join Free</button>
+    </div>
+  </nav>
+
+  <section class="hero-section">
+    <div class="hero-badge">🇺🇬 For Tech Engineers & Software Developers</div>
+    <h1 class="hero-title">Where Uganda's <span style="color:var(--accent)">Tech Innovators</span> Build Together</h1>
+    <p class="hero-subtitle text-muted">Share your innovations, learn from real courses, connect with engineers, and collaborate on the next generation of African tech.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-primary btn-lg btn-pill" onclick="openAuthModal(); switchAuthTab('signup')">Join the Community</button>
+      <button class="btn btn-secondary btn-lg btn-pill" onclick="enterGuest()">Browse as Guest</button>
+    </div>
+    <div class="guest-bar">
+      <span>Already a member?</span>
+      <span class="guest-link" onclick="openAuthModal(); switchAuthTab('login')">Sign in →</span>
+    </div>
+  </section>
+
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-icon">💡</div>
+      <div class="feature-title">Share Innovations</div>
+      <div class="feature-desc">Post your projects, discoveries, and breakthroughs with the engineering community.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🎓</div>
+      <div class="feature-title">Real Courses</div>
+      <div class="feature-desc">Learn from YouTube-powered courses curated for Ugandan engineers — no paywalls.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📚</div>
+      <div class="feature-title">Resource Library</div>
+      <div class="feature-desc">Upload and download PDFs, notes, and technical documents from the community.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">💬</div>
+      <div class="feature-title">Direct Messaging</div>
+      <div class="feature-desc">Follow engineers and message them directly. Build real professional connections.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🧵</div>
+      <div class="feature-title">Discussions</div>
+      <div class="feature-desc">Ask technical questions, start debates, and solve engineering challenges together.</div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🚀</div>
+      <div class="feature-title">Startup Directory</div>
+      <div class="feature-desc">List your startup, find co-founders, and connect with investors in East Africa.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  MAIN APP SHELL (Feed, Profile, Messages, etc.)
+═══════════════════════════════════════════════════════ -->
+<div id="page-feed" class="page">
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="flex-shrink:0">
+          <rect width="28" height="28" rx="8" fill="var(--accent)" opacity=".15"/>
+          <path d="M7 14L12 9L16 13L21 8" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="7" cy="14" r="2" fill="var(--accent)"/>
+          <circle cx="21" cy="8" r="2" fill="var(--accent)"/>
+        </svg>
+        <span>Innovators<em style="font-style:normal;color:var(--accent)">Hub</em></span>
+      </div>
+
+      <nav>
+        <div class="nav-item active" data-page="feed" onclick="sNav('feed'); loadFeed()">
+          <span class="nav-icon">🏠</span> Feed
+        </div>
+        <div class="nav-item" data-page="explore" onclick="sNav('explore')">
+          <span class="nav-icon">🔍</span> Explore
+        </div>
+        <div class="nav-item member-only-nav" data-page="notifications" onclick="sNav('notifications'); loadNotifications()">
+          <span class="nav-icon">🔔</span> Notifications
+          <span class="nav-badge hidden" id="notif-badge">0</span>
+        </div>
+        <div class="nav-item member-only-nav" data-page="messages" onclick="sNav('messages'); loadMessages()">
+          <span class="nav-icon">💬</span> Messages
+          <span class="nav-badge hidden" id="msg-badge">0</span>
+        </div>
+
+        <div class="nav-label">Community</div>
+        <div class="nav-item" data-page="courses" onclick="sNav('courses'); loadCourses()">
+          <span class="nav-icon">🎓</span> Courses
+        </div>
+        <div class="nav-item" data-page="resources" onclick="sNav('resources'); loadResources()">
+          <span class="nav-icon">📚</span> Resources
+        </div>
+        <div class="nav-item" data-page="discussions" onclick="sNav('discussions'); loadDiscussions()">
+          <span class="nav-icon">🧵</span> Discussions
+        </div>
+        <div class="nav-item" data-page="startups" onclick="sNav('startups'); loadStartups()">
+          <span class="nav-icon">🚀</span> Startups
+        </div>
+        <div class="nav-item" data-page="events" onclick="sNav('events'); loadEvents()">
+          <span class="nav-icon">📅</span> Events
+        </div>
+
+        <div class="nav-label hidden" id="nav-admin-label">Admin</div>
+        <div class="nav-item adm-ni hidden" id="nav-admin-item" onclick="sNav('admin'); loadAdminDashboard()">
+          <span class="nav-icon">⚙️</span> Dashboard
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="nav-item" id="sidebar-profile-item" onclick="sNav('profile-self')">
+          <div id="sidebar-avatar" style="flex-shrink:0">
+            <div class="avatar avatar-sm" style="background:var(--bg3);color:var(--text3)">?</div>
+          </div>
+          <div style="min-width:0">
+            <div id="sidebar-name" class="truncate" style="font-size:.88rem;font-weight:600">Guest</div>
+            <div id="sidebar-role" style="font-size:.72rem;color:var(--text3)">Browse only</div>
+          </div>
+          <button class="btn btn-icon btn-sm" style="margin-left:auto;flex-shrink:0" onclick="event.stopPropagation(); signOut()" title="Sign out" id="signout-btn">↩</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN FEED AREA -->
+    <main class="feed-area" id="main-area">
+
+      <!-- FEED SECTION -->
+      <section id="section-feed">
+        <div class="topnav">
+          <span class="topnav-title">Home</span>
+          <div class="flex gap-2">
+            <button class="btn btn-primary btn-sm" id="compose-btn" onclick="focusComposer()">
+              + Post
+            </button>
+          </div>
+        </div>
+
+        <!-- Guest banner -->
+        <div class="guest-banner hidden" id="guest-banner">
+          <div class="guest-banner-text"><strong>You're browsing as a guest.</strong> Sign up to post, comment, message, and access all features.</div>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal()">Join Free</button>
+        </div>
+
+        <!-- Composer -->
+        <div class="composer" id="composer-section">
+          <div id="composer-avatar">
+            <div class="avatar avatar-md" style="background:var(--bg3)">✎</div>
+          </div>
+          <div style="flex:1">
+            <textarea
+              class="composer-input"
+              id="composer-text"
+              placeholder="Share an innovation, discovery, or question with the community… Paste a YouTube link to embed a video 🎬"
+              rows="3"></textarea>
+
+            <!-- Upload & poll previews -->
+            <div id="upload-preview" class="hidden mb-2"></div>
+            <div id="poll-preview" class="hidden mb-2"></div>
+
+            <div class="composer-actions">
+              <div class="composer-tools">
+                <label title="Upload PDF or Image">
+                  <button class="composer-tool" id="upload-btn" onclick="$('#file-upload').click()" type="button">📎</button>
+                  <input type="file" id="file-upload" accept="image/*,application/pdf" class="hidden" onchange="handleFileSelect(this)">
+                </label>
+                <button class="composer-tool" title="Create Poll" onclick="openPollCreator()" type="button">📊</button>
+              </div>
+              <button class="btn btn-primary btn-sm" id="post-submit-btn" onclick="submitPost()">Post</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feed tabs -->
+        <div class="feed-tabs">
+          <div class="feed-tab active" onclick="switchFeedTab('for-you', this)">For You</div>
+          <div class="feed-tab member-only-nav" onclick="switchFeedTab('following', this)">Following</div>
+        </div>
+
+        <!-- Posts -->
+        <div id="feed-posts"></div>
+      </section>
+
+      <!-- EXPLORE SECTION -->
+      <section id="section-explore" class="hidden">
+        <div class="topnav"><span class="topnav-title">Explore</span></div>
+        <div class="search-bar">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" id="search-input" placeholder="Search posts, people, resources…" oninput="handleSearch(this.value)">
+          </div>
+        </div>
+        <div id="feed-posts"></div>
+      </section>
+
+      <!-- NOTIFICATIONS SECTION -->
+      <section id="section-notifications" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Notifications</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadNotifications()">Mark all read</button>
+        </div>
+        <div id="notifs-list"></div>
+      </section>
+
+      <!-- MESSAGES SECTION -->
+      <section id="section-messages" class="hidden" style="height:100vh;overflow:hidden">
+        <div class="msg-layout">
+          <div class="conv-list" id="conv-list">
+            <div class="topnav" style="position:sticky;top:0">
+              <span class="topnav-title">Messages</span>
+            </div>
+          </div>
+          <div id="chat-area" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.75rem;color:var(--text3)">
+            <div style="font-size:2.5rem">💬</div>
+            <div style="font-size:.9rem">Select a conversation</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COURSES SECTION -->
+      <section id="section-courses" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Courses</span>
+          <button class="btn btn-primary btn-sm hidden" id="add-course-btn" onclick="openModal('modal-add-course')">+ Add Course</button>
+        </div>
+        <div class="p-4" style="padding:1.25rem">
+          <p class="text-muted mb-4">Learn from curated YouTube courses selected by the community. Real content, no paywalls.</p>
+          <div id="courses-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem"></div>
+        </div>
+      </section>
+
+      <!-- RESOURCES SECTION -->
+      <section id="section-resources" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Resources</span>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary btn-sm" onclick="loadResources()">All</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadResources('pdf')">PDF</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadResources('video')">Video</button>
+            <button class="btn btn-primary btn-sm member-only-nav" onclick="openModal('modal-upload-resource')">+ Upload</button>
+          </div>
+        </div>
+        <div id="resources-list" class="p-4"></div>
+      </section>
+
+      <!-- DISCUSSIONS SECTION -->
+      <section id="section-discussions" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Discussions</span>
+          <button class="btn btn-primary btn-sm member-only-nav" onclick="openModal('modal-new-thread')">+ New Thread</button>
+        </div>
+        <div id="discussions-list" class="p-4"></div>
+      </section>
+
+      <!-- STARTUPS SECTION -->
+      <section id="section-startups" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Startup Directory</span>
+          <button class="btn btn-primary btn-sm member-only-nav" onclick="openModal('modal-add-startup')">+ List Startup</button>
+        </div>
+        <div id="startups-grid" class="p-4" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem"></div>
+      </section>
+
+      <!-- EVENTS SECTION -->
+      <section id="section-events" class="hidden">
+        <div class="topnav">
+          <span class="topnav-title">Events</span>
+          <button class="btn btn-primary btn-sm hidden" id="add-event-btn" onclick="openModal('modal-add-event')">+ Add Event</button>
+        </div>
+        <div id="events-list" class="p-4"></div>
+      </section>
+
+      <!-- PROFILE SECTION -->
+      <section id="section-profile" class="hidden">
+        <div id="profile-content"></div>
+      </section>
+
+      <!-- ADMIN SECTION -->
+      <section id="section-admin" class="hidden">
+        <div class="topnav"><span class="topnav-title">⚙️ Admin Dashboard</span></div>
+        <div id="admin-content" class="p-4"></div>
+      </section>
+
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel">
+      <div class="panel-widget" id="guest-upgrade-widget">
+        <h3>Join InnovatorsHub</h3>
+        <p class="text-sm text-muted mb-3">Connect with Uganda's tech engineers. Post innovations, access courses, message peers.</p>
+        <button class="btn btn-primary w-full" onclick="openAuthModal()">Create Account</button>
+        <button class="btn btn-ghost w-full mt-2" onclick="openAuthModal(); switchAuthTab('login')">Sign In</button>
+      </div>
+
+      <div class="panel-widget hidden" id="member-widget">
+        <h3>💡 Quick Actions</h3>
+        <button class="btn btn-secondary w-full mb-2" onclick="focusComposer()">✏️ Share Innovation</button>
+        <button class="btn btn-secondary w-full mb-2" onclick="sNav('resources'); loadResources()">📚 Browse Resources</button>
+        <button class="btn btn-secondary w-full" onclick="sNav('courses'); loadCourses()">🎓 View Courses</button>
+      </div>
+
+      <div class="panel-widget" id="trending-widget">
+        <h3>🔥 Trending Tags</h3>
+        <div id="trending-tags">
+          <div class="flex flex-wrap gap-2" id="tags-container">
+            <!-- Loaded dynamically -->
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#embedded')"> #embedded</span>
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#webdev')">#webdev</span>
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#iot')">#iot</span>
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#machinelearning')">#machinelearning</span>
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#fintech')">#fintech</span>
+            <span class="badge badge-neutral cursor-pointer" onclick="handleSearch('#opensource')">#opensource</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  PAGE: PROFILE
+═══════════════════════════════════════════════════════ -->
+<div id="page-profile" class="page">
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar-profile-page"><!-- Same sidebar injected by JS --></aside>
+    <main class="feed-area">
+      <div class="topnav">
+        <button class="btn btn-ghost btn-sm" onclick="history.back()">← Back</button>
+      </div>
+      <div id="profile-content"></div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  PAGE: MESSAGES (standalone on mobile)
+═══════════════════════════════════════════════════════ -->
+<div id="page-messages" class="page">
+  <div class="app-shell">
+    <aside class="sidebar"></aside>
+    <main class="feed-area" style="overflow:hidden">
+      <div class="msg-layout" style="height:100vh">
+        <div class="conv-list" id="conv-list-mobile">
+          <div class="topnav" style="position:sticky;top:0"><span class="topnav-title">Messages</span></div>
+        </div>
+        <div id="chat-area-mobile" class="chat-empty"><div style="font-size:2.5rem">💬</div><p>Select a conversation</p></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  MOBILE BOTTOM NAV
+═══════════════════════════════════════════════════════ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-item active" data-page="feed" onclick="sNav('feed'); loadFeed()">
+    <span class="mn-icon">🏠</span> Home
+  </div>
+  <div class="mobile-nav-item" data-page="explore" onclick="sNav('explore')">
+    <span class="mn-icon">🔍</span> Explore
+  </div>
+  <div class="mobile-nav-item" data-page="notifications" onclick="sNav('notifications'); loadNotifications()">
+    <span class="mn-icon" style="position:relative">🔔<span class="mn-badge hidden" id="mobile-notif-badge">0</span></span> Notifs
+  </div>
+  <div class="mobile-nav-item" data-page="messages" onclick="sNav('messages'); loadMessages()">
+    <span class="mn-icon">💬</span> Messages
+  </div>
+  <div class="mobile-nav-item" data-page="profile-self" onclick="sNav('profile-self')">
+    <span class="mn-icon">👤</span> Profile
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+  MODALS
+═══════════════════════════════════════════════════════ -->
+
+<!-- AUTH MODAL -->
+<div id="modal-auth" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="auth-logo" style="font-size:1.1rem">Innovators<em>Hub</em></div>
+      <button class="modal-close" onclick="closeModal('modal-auth')">×</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-5" style="background:var(--bg2);padding:3px;border-radius:var(--radius)">
+      <button class="btn btn-sm auth-tab-btn active" data-tab="login" onclick="switchAuthTab('login')" style="flex:1">Sign In</button>
+      <button class="btn btn-sm auth-tab-btn" data-tab="signup" onclick="switchAuthTab('signup')" style="flex:1">Sign Up</button>
+    </div>
+
+    <!-- Login -->
+    <div id="auth-login" class="auth-tab-content">
+      <button class="oauth-btn" onclick="signInWithGoogle()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <button class="oauth-btn" onclick="signInWithGitHub()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Continue with GitHub
+      </button>
+
+      <div class="auth-divider"><span>or sign in with email</span></div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" class="form-control" placeholder="you@example.com" onkeydown="if(event.key==='Enter')submitLogin()">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitLogin()">
+      </div>
+      <div id="login-error" class="form-error"></div>
+      <button class="btn btn-primary w-full mt-2" id="login-btn" onclick="submitLogin()">Sign In</button>
+    </div>
+
+    <!-- Sign Up -->
+    <div id="auth-signup" class="auth-tab-content hidden">
+      <button class="oauth-btn" onclick="signInWithGoogle()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Sign up with Google
+      </button>
+      <button class="oauth-btn" onclick="signInWithGitHub()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Sign up with GitHub
+      </button>
+
+      <div class="auth-divider"><span>or sign up with email</span></div>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signup-name" class="form-control" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" class="form-control" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password <span class="form-hint" style="display:inline">(min 8 characters)</span></label>
+        <input type="password" id="signup-password" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitSignup()">
+      </div>
+      <div id="signup-error" class="form-error"></div>
+      <button class="btn btn-primary w-full mt-2" id="signup-btn" onclick="submitSignup()">Create Account</button>
+      <p class="text-xs text-faint mt-3 text-center">By joining you agree to keep content professional and relevant to tech, engineering, and software development.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div id="modal-payment" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Subscribe — UGX 25,000/mo</span>
+      <button class="modal-close" onclick="closeModal('modal-payment')">×</button>
+    </div>
+
+    <div id="pay-form-step">
+      <p class="text-sm text-muted mb-4">Get full access to post, comment, message peers, and access all features.</p>
+      <div class="pay-method-grid">
+        <div class="pay-method-card selected-mtn" id="pay-method-mtn" onclick="selectPayMethod('MTN')">
+          <div class="pay-method-logo">📲</div>
+          <div class="pay-method-name" style="color:#ffcc00">MTN MoMo</div>
+          <div class="pay-method-sub">Mobile Money</div>
+        </div>
+        <div class="pay-method-card" id="pay-method-airtel" onclick="selectPayMethod('AIRTEL')">
+          <div class="pay-method-logo">📱</div>
+          <div class="pay-method-name" style="color:#e2001a">Airtel Money</div>
+          <div class="pay-method-sub">Mobile Money</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="pay-phone-label">MTN Phone Number</label>
+        <input type="tel" id="pay-phone-input" class="form-control" placeholder="0772 123 456">
+      </div>
+      <div class="form-group">
+        <label>Referral Code (optional)</label>
+        <input type="text" id="pay-ref-code" class="form-control" placeholder="e.g. ALEX2025" style="text-transform:uppercase">
+      </div>
+      <div class="pay-summary">
+        <div class="pay-row"><span>Plan</span><span>InnovatorsHub Member</span></div>
+        <div class="pay-row"><span>Duration</span><span>1 Month</span></div>
+        <div class="pay-row total"><span>Total</span><span>UGX 25,000</span></div>
+      </div>
+      <button class="btn btn-primary w-full" id="pay-submit-btn" onclick="initiatePayment()">Send Payment Prompt →</button>
+    </div>
+
+    <div id="pay-polling-step" class="hidden">
+      <div class="pay-polling">
+        <div class="spinner-ring"></div>
+        <h3 style="margin-bottom:.5rem">Waiting for payment…</h3>
+        <p class="text-sm text-muted">Check your phone and enter your PIN to approve the payment.</p>
+        <p class="text-xs text-faint mt-3">This page will update automatically.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div id="modal-edit-profile" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Edit Profile</span>
+      <button class="modal-close" onclick="closeModal('modal-edit-profile')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Profile Photo</label>
+      <div class="flex items-center gap-3">
+        <div id="edit-avatar-preview"><div class="avatar avatar-lg"></div></div>
+        <label class="btn btn-secondary btn-sm cursor-pointer">
+          Upload Photo
+          <input type="file" accept="image/*" class="hidden" onchange="uploadAvatar(this)">
+        </label>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="edit-name" class="form-control" placeholder="Your full name">
+      </div>
+      <div class="form-group">
+        <label>Headline</label>
+        <input type="text" id="edit-headline" class="form-control" placeholder="e.g. Software Engineer @ Kampala">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Bio</label>
+      <textarea id="edit-bio" class="form-control" placeholder="Tell the community about yourself, your work, and your interests…" style="height:100px"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="edit-location" class="form-control" placeholder="Kampala, Uganda">
+      </div>
+      <div class="form-group">
+        <label>Sector</label>
+        <select id="edit-sector" class="form-control">
+          <option value="">Select sector</option>
+          <option>Software Engineering</option>
+          <option>Electrical Engineering</option>
+          <option>Mechanical Engineering</option>
+          <option>Computer Science</option>
+          <option>Data Science & AI</option>
+          <option>IoT & Embedded Systems</option>
+          <option>FinTech</option>
+          <option>AgriTech</option>
+          <option>EdTech</option>
+          <option>HealthTech</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="divider" style="margin:1.25rem 0"></div>
+    <div class="label mb-3">Social & Professional Links</div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>💼 LinkedIn</label>
+        <input type="url" id="edit-linkedin" class="form-control" placeholder="https://linkedin.com/in/yourname">
+      </div>
+      <div class="form-group">
+        <label>🐙 GitHub</label>
+        <input type="url" id="edit-github" class="form-control" placeholder="https://github.com/yourname">
+      </div>
+      <div class="form-group">
+        <label>𝕏 Twitter / X</label>
+        <input type="url" id="edit-twitter" class="form-control" placeholder="https://twitter.com/yourname">
+      </div>
+      <div class="form-group">
+        <label>🌐 Website / Portfolio</label>
+        <input type="url" id="edit-website" class="form-control" placeholder="https://yourwebsite.com">
+      </div>
+    </div>
+    <div class="flex justify-between mt-2">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-profile')">Cancel</button>
+      <button class="btn btn-primary" id="edit-profile-submit" onclick="submitEditProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMMENTS MODAL -->
+<div id="modal-comments" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Comments</span>
+      <button class="modal-close" onclick="closeModal('modal-comments')">×</button>
+    </div>
+    <input type="hidden" id="comments-post-id">
+    <div id="comments-list" style="max-height:350px;overflow-y:auto"></div>
+    <div class="flex gap-2 mt-3">
+      <input type="text" id="comment-input" class="form-control" placeholder="Write a comment…" onkeydown="if(event.key==='Enter')submitComment()">
+      <button class="btn btn-primary btn-sm" onclick="submitComment()">Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- COURSE VIEWER MODAL -->
+<div id="modal-course-viewer" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="course-viewer-title">Course</span>
+      <button class="modal-close" onclick="closeModal('modal-course-viewer')">×</button>
+    </div>
+    <div id="course-viewer-player" style="margin-bottom:1rem"></div>
+    <p id="course-viewer-desc" class="text-sm text-muted"></p>
+  </div>
+</div>
+
+<!-- ADD COURSE MODAL (Admin only) -->
+<div id="modal-add-course" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Course</span>
+      <button class="modal-close" onclick="closeModal('modal-add-course')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Course Title</label>
+      <input type="text" id="course-title" class="form-control" placeholder="e.g. Introduction to Embedded Systems">
+    </div>
+    <div class="form-group">
+      <label>YouTube URL</label>
+      <input type="url" id="course-yt-url" class="form-control" placeholder="https://youtube.com/watch?v=... or playlist URL">
+      <div class="form-hint">Paste any YouTube video or playlist link. The video will be embedded automatically.</div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="course-desc" class="form-control" placeholder="What will students learn?"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Instructor</label>
+        <input type="text" id="course-instructor" class="form-control" placeholder="Instructor name">
+      </div>
+      <div class="form-group">
+        <label>Level</label>
+        <select id="course-level" class="form-control">
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+          <option>All Levels</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Duration</label>
+      <input type="text" id="course-duration" class="form-control" placeholder="e.g. 4h 30m">
+    </div>
+    <button class="btn btn-primary w-full" onclick="submitAddCourse()">Add Course</button>
+  </div>
+</div>
+
+<!-- UPLOAD RESOURCE MODAL -->
+<div id="modal-upload-resource" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Upload Resource</span>
+      <button class="modal-close" onclick="closeModal('modal-upload-resource')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="resource-title" class="form-control" placeholder="Give your resource a clear title">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="resource-desc" class="form-control" placeholder="What is this resource about? Who is it for?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>File</label>
+      <label class="upload-zone cursor-pointer" id="resource-upload-zone">
+        <div class="upload-zone-icon">📁</div>
+        <p>Click to select a file</p>
+        <small>PDF, images — max 50MB</small>
+        <input type="file" id="resource-file" accept=".pdf,image/*" class="hidden"
+          onchange="$('#resource-upload-zone').querySelector('p').textContent = this.files[0]?.name || 'Click to select'">
+      </label>
+    </div>
+    <button class="btn btn-primary w-full" id="resource-submit-btn" onclick="submitResource()">Upload Resource</button>
+  </div>
+</div>
+
+<!-- POLL CREATOR MODAL -->
+<div id="modal-poll-creator" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Create Poll</span>
+      <button class="modal-close" onclick="closeModal('modal-poll-creator')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Question</label>
+      <input type="text" id="poll-question-input" class="form-control" placeholder="Ask your question…" maxlength="140">
+    </div>
+    <div class="form-group">
+      <label>Options</label>
+      <div id="poll-options-container">
+        <input class="form-control poll-option-input" placeholder="Option 1" maxlength="80">
+        <input class="form-control poll-option-input mt-2" placeholder="Option 2" maxlength="80">
+      </div>
+      <button class="btn btn-ghost btn-sm mt-2" onclick="addPollOption()">+ Add Option</button>
+    </div>
+    <div class="flex justify-between">
+      <button class="btn btn-ghost" onclick="closeModal('modal-poll-creator')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPoll()">Add Poll</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW THREAD MODAL -->
+<div id="modal-new-thread" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Start a Discussion</span>
+      <button class="modal-close" onclick="closeModal('modal-new-thread')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="new-thread-title" class="form-control" placeholder="Ask a question or start a technical discussion…" maxlength="200">
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="new-thread-category" class="form-control">
+        <option>Software Engineering</option>
+        <option>Embedded Systems</option>
+        <option>Web Development</option>
+        <option>Data Science & AI</option>
+        <option>FinTech</option>
+        <option>AgriTech</option>
+        <option>Career & Growth</option>
+        <option>General</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="new-thread-body" class="form-control" placeholder="Provide context, code snippets, or details…" style="height:140px"></textarea>
+    </div>
+    <div class="flex justify-between">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-thread')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNewThread()">Post Thread</button>
+    </div>
+  </div>
+</div>
+
+<!-- THREAD VIEW MODAL -->
+<div id="modal-thread-view" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Discussion</span>
+      <button class="modal-close" onclick="closeModal('modal-thread-view')">×</button>
+    </div>
+    <input type="hidden" id="thread-id-input">
+    <div id="thread-modal-body" style="max-height:400px;overflow-y:auto;margin-bottom:1rem"></div>
+    <div class="divider"></div>
+    <div class="flex gap-2 mt-3">
+      <textarea id="thread-reply-input" class="form-control" placeholder="Write a reply…" rows="2"></textarea>
+      <button class="btn btn-primary" style="flex-shrink:0;align-self:flex-end" onclick="submitThreadReply()">Reply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STARTUP MODAL -->
+<div id="modal-add-startup" class="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">List Your Startup</span>
+      <button class="modal-close" onclick="closeModal('modal-add-startup')">×</button>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Startup Name</label>
+        <input type="text" id="startup-name" class="form-control" placeholder="Your startup name">
+      </div>
+      <div class="form-group">
+        <label>Logo Emoji</label>
+        <input type="text" id="startup-emoji" class="form-control" placeholder="🚀" maxlength="2">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Tagline</label>
+      <input type="text" id="startup-tagline" class="form-control" placeholder="One sentence describing what you do" maxlength="120">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="startup-desc" class="form-control" placeholder="Tell investors and the community more about your startup…"></textarea>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Sector</label>
+        <select id="startup-sector" class="form-control">
+          <option>Software Engineering</option><option>FinTech</option><option>AgriTech</option>
+          <option>HealthTech</option><option>EdTech</option><option>IoT</option><option>CleanTech</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Stage</label>
+        <select id="startup-stage" class="form-control">
+          <option value="idea">Idea Stage</option><option value="pre-seed">Pre-Seed</option>
+          <option value="seed">Seed</option><option value="series-a">Series A</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="startup-location" class="form-control" placeholder="Kampala, Uganda">
+      </div>
+      <div class="form-group">
+        <label>Website (optional)</label>
+        <input type="url" id="startup-website" class="form-control" placeholder="https://yourstartup.com">
+      </div>
+    </div>
+    <button class="btn btn-primary w-full" onclick="submitStartup()">List Startup</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+  APP JS
+═══════════════════════════════════════════════════════ -->
+<script src="app.js">
+// ── PAGE NAVIGATION HELPERS ─────────────────────────────────────
+function sNav(section) {
+  // Update active state on both sidebars and mobile nav
+  $$('.nav-item, .mobile-nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === section));
+
+  // Show the right page
+  if (section === 'profile-self') {
+    if (App.user) { viewProfile(App.user.id); }
+    else { openAuthModal(); }
+    return;
+  }
+
+  // All sections live inside page-feed (single app page)
+  showPage('feed');
+
+  // Hide all sections, show the one we need
+  $$('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+  const target = $(`#section-${section}`);
+  if (target) target.classList.remove('hidden');
+}
+
+function switchFeedTab(tab, el) {
+  $$('.feed-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadFeed(tab);
+}
+
+function focusComposer() {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  $('section#section-feed').classList.remove('hidden');
+  $$('[id^="section-"]').forEach(s => {
+    if (s.id !== 'section-feed') s.classList.add('hidden');
+  });
+  $('#composer-text')?.focus();
+  window.scrollTo(0, 0);
+}
+
+// ── ADMIN: Add Course ─────────────────────────────────────────
+async function submitAddCourse() {
+  if (!App.profile?.is_admin) return;
+  const title      = $('#course-title')?.value.trim();
+  const ytUrl      = $('#course-yt-url')?.value.trim();
+  const desc       = $('#course-desc')?.value.trim();
+  const instructor = $('#course-instructor')?.value.trim();
+  const level      = $('#course-level')?.value;
+  const duration   = $('#course-duration')?.value.trim();
+
+  if (!title || !ytUrl) { toast('Title and YouTube URL required', 'error'); return; }
+
+  const ytId = extractYouTubeId(ytUrl);
+  const { error } = await sb.from('courses').insert({
+    title, yt_url: ytUrl,
+    yt_thumbnail: ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null,
+    description: desc, instructor, level, duration,
+    is_published: true, created_by: App.user.id
+  });
+
+  if (error) { toast(error.message, 'error'); return; }
+  closeModal('modal-add-course');
+  toast('Course added ✓', 'success');
+  loadCourses();
+}
+
+// ── Events ─────────────────────────────────────────────────────
+async function loadEvents() {
+  const container = $('#events-list');
+  if (!container) return;
+  container.innerHTML = '<div class="skeleton sk-line full"></div>';
+
+  const { data: events } = await sb.from('events').select('*').eq('is_active', true).order('event_date', { ascending: true });
+
+  container.innerHTML = '';
+  if (!events?.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><h3>No upcoming events</h3><p>Check back soon!</p></div>';
+    return;
+  }
+
+  let myRSVPs = new Set();
+  if (App.user) {
+    const { data: rsvps } = await sb.from('event_rsvps').select('event_id').eq('user_id', App.user.id);
+    (rsvps || []).forEach(r => myRSVPs.add(r.event_id));
+  }
+
+  events.forEach(ev => {
+    const d   = new Date(ev.event_date);
+    const day = d.getDate();
+    const mon = d.toLocaleString('default', { month: 'short' }).toUpperCase();
+    const rsvpd = myRSVPs.has(ev.id);
+    container.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;gap:1rem;padding:1.25rem;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="background:var(--accent-l);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius);padding:.6rem .8rem;text-align:center;min-width:52px;flex-shrink:0">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:var(--accent);line-height:1">${day}</div>
+          <div style="font-size:.7rem;font-weight:600;color:var(--accent);text-transform:uppercase">${mon}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:.3rem">${escapeHtml(ev.title)}</div>
+          <div style="font-size:.82rem;color:var(--text3);display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.4rem">
+            <span>📍 ${escapeHtml(ev.location)}</span>
+            <span class="badge ${ev.event_type === 'online' ? 'badge-green' : 'badge-amber'}">${ev.event_type === 'online' ? '🌐 Online' : '🏢 Physical'}</span>
+            <span>👥 ${formatNumber(ev.rsvp_count || 0)} going</span>
+          </div>
+          <p style="font-size:.85rem;color:var(--text2);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(ev.description || '')}</p>
+        </div>
+        <button class="btn ${rsvpd ? 'btn-secondary' : 'btn-primary'} btn-sm" style="flex-shrink:0" onclick="toggleEventRSVP('${ev.id}', this)">
+          ${rsvpd ? '✓ Going' : 'RSVP'}
+        </button>
+      </div>`);
+  });
+}
+
+async function toggleEventRSVP(eventId, btn) {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  const { data: existing } = await sb.from('event_rsvps').select('id').eq('event_id', eventId).eq('user_id', App.user.id).single();
+  if (existing) {
+    await sb.from('event_rsvps').delete().eq('id', existing.id);
+    await sb.from('events').update({ rsvp_count: sb.rpc('decrement', {}) }).eq('id', eventId).catch(() => {});
+    btn.className = 'btn btn-primary btn-sm'; btn.style.flexShrink = '0'; btn.textContent = 'RSVP';
+    toast('RSVP cancelled', 'info');
+  } else {
+    await sb.from('event_rsvps').insert({ event_id: eventId, user_id: App.user.id });
+    btn.className = 'btn btn-secondary btn-sm'; btn.style.flexShrink = '0'; btn.textContent = '✓ Going';
+    toast('📅 RSVP confirmed!', 'success');
+  }
+}
+
+// ── Startup submit ───────────────────────────────────────────
+async function submitStartup() {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  const name     = $('#startup-name')?.value.trim();
+  const tagline  = $('#startup-tagline')?.value.trim();
+  const desc     = $('#startup-desc')?.value.trim();
+  const emoji    = $('#startup-emoji')?.value.trim() || '🚀';
+  const sector   = $('#startup-sector')?.value;
+  const stage    = $('#startup-stage')?.value;
+  const location = $('#startup-location')?.value.trim();
+  const website  = $('#startup-website')?.value.trim();
+
+  if (!name || !tagline) { toast('Name and tagline required', 'error'); return; }
+
+  const { error } = await sb.from('startups').insert({
+    user_id: App.user.id, name, tagline, description: desc,
+    logo_emoji: emoji, sector, stage, location, website: website || null
+  });
+
+  if (error) { toast(error.message, 'error'); return; }
+  closeModal('modal-add-startup');
+  toast('Startup listed! 🚀', 'success');
+  loadStartups();
+}
+
+// ── Admin Dashboard ──────────────────────────────────────────
+async function loadAdminDashboard() {
+  if (!App.profile?.is_admin) return;
+  $('#add-course-btn')?.classList.remove('hidden');
+  $('#add-event-btn')?.classList.remove('hidden');
+
+  const content = $('#admin-content');
+
+  const [users, posts, reports, subs] = await Promise.all([
+    sb.from('profiles').select('id', { count: 'exact', head: true }),
+    sb.from('posts').select('id', { count: 'exact', head: true }).eq('is_deleted', false),
+    sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    sb.from('subscriptions').select('amount').eq('status', 'completed'),
+  ]);
+
+  const revenue = (subs.data || []).reduce((a, s) => a + (s.amount || 0), 0);
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
+      <div class="card p-4"><div class="label">Members</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--accent)">${users.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Posts</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800">${posts.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Pending Reports</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--red)">${reports.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Revenue</div><div style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:var(--green)">UGX ${revenue.toLocaleString()}</div></div>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-4">
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers()">Manage Users</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminReports()">View Reports</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-course')">+ Add Course</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-event')">+ Add Event</button>
+    </div>
+    <div id="admin-sub-content"></div>`;
+}
+
+async function loadAdminUsers() {
+  const { data: users } = await sb.from('profiles').select('id, full_name, email, subscription_status, status, created_at').order('created_at', { ascending: false }).limit(50);
+  const container = $('#admin-sub-content');
+  container.innerHTML = `
+    <h3 class="mb-3">All Members</h3>
+    ${(users || []).map(u => `
+      <div class="flex items-center gap-3 p-3 border rounded mb-2">
+        <div style="flex:1"><div class="font-bold text-sm">${escapeHtml(u.full_name || '')}</div><div class="text-xs text-faint">${escapeHtml(u.email || '')}</div></div>
+        <span class="badge ${u.subscription_status === 'active' ? 'badge-green' : 'badge-neutral'}">${u.subscription_status || 'free'}</span>
+        ${u.status === 'suspended' ? '<span class="badge badge-red">Suspended</span>' : ''}
+        <div class="flex gap-1">
+          ${u.status !== 'suspended' ? `<button class="btn btn-secondary btn-sm" onclick="adminSuspend('${u.id}')">Suspend</button>` : `<button class="btn btn-green btn-sm" onclick="adminReinstate('${u.id}')">Reinstate</button>`}
+          <button class="btn btn-danger btn-sm" onclick="adminRemove('${u.id}')">Remove</button>
+        </div>
+      </div>`).join('')}`;
+}
+
+async function loadAdminReports() {
+  const { data: reports } = await sb.from('reports').select('*, reporter:reporter_id(full_name), reported_post:reported_post_id(body)').eq('status', 'pending');
+  const container = $('#admin-sub-content');
+  container.innerHTML = `<h3 class="mb-3">Pending Reports (${reports?.length || 0})</h3>
+    ${(reports || []).map(r => `
+      <div class="card p-4 mb-2">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge badge-red">${escapeHtml(r.report_type)}</span>
+          <span class="text-xs text-faint">by ${escapeHtml(r.reporter?.full_name || 'Unknown')} · ${formatTime(r.created_at)}</span>
+        </div>
+        ${r.reported_post ? `<div class="text-sm text-muted mb-2 p-2 rounded" style="background:var(--bg2)">"${escapeHtml((r.reported_post.body||'').substring(0,100))}..."</div>` : ''}
+        <div class="flex gap-2">
+          ${r.reported_post_id ? `<button class="btn btn-danger btn-sm" onclick="adminDeletePostFromReport('${r.reported_post_id}','${r.id}')">Remove Post</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="adminResolveReport('${r.id}')">Dismiss</button>
+        </div>
+      </div>`).join('') || '<div class="empty-state"><p>No pending reports. ✓</p></div>'}`;
+}
+
+async function adminSuspend(uid) {
+  if (!confirm('Suspend this user?')) return;
+  await sb.from('profiles').update({ status: 'suspended' }).eq('id', uid);
+  toast('User suspended', 'success'); loadAdminUsers();
+}
+async function adminReinstate(uid) {
+  await sb.from('profiles').update({ status: 'active' }).eq('id', uid);
+  toast('User reinstated', 'success'); loadAdminUsers();
+}
+async function adminRemove(uid) {
+  if (!confirm('Permanently remove this user? This cannot be undone.')) return;
+  await sb.from('profiles').update({ status: 'deleted' }).eq('id', uid);
+  toast('User removed', 'success'); loadAdminUsers();
+}
+async function adminDeletePostFromReport(postId, reportId) {
+  await sb.from('posts').update({ is_deleted: true }).eq('id', postId);
+  await adminResolveReport(reportId);
+  toast('Post removed', 'success');
+}
+async function adminResolveReport(reportId) {
+  await sb.from('reports').update({ status: 'resolved', resolved_by: App.user.id, resolved_at: new Date().toISOString() }).eq('id', reportId);
+  toast('Report resolved', 'success'); loadAdminReports();
+}
+
+// Make admin features visible when logged in as admin
+window.addEventListener('userLoaded', (e) => {
+  if (e.detail?.is_admin) {
+    $('#add-course-btn')?.classList.remove('hidden');
+    $('#add-event-btn')?.classList.remove('hidden');
+    $('#nav-admin-label')?.classList.remove('hidden');
+    $('#nav-admin-item')?.classList.remove('hidden');
+  }
+});
+</script>
+</body>
+</html>
