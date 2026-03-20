@@ -329,11 +329,23 @@ function renderPost(post, myRxns = new Set()) {
   } else if (post.media_url) {
     if (post.type === 'image') {
       mediaHTML = `<div class="post-media"><img src="${escapeHtml(post.media_url)}" alt="${escapeHtml(post.media_name || 'Image')}" loading="lazy" style="width:100%;max-height:400px;object-fit:cover;"></div>`;
-    } else if (post.type === 'resource') {
+    } else if (post.type === 'video') {
+      mediaHTML = `
+        <div class="post-media">
+          <video controls preload="metadata" style="width:100%;max-height:450px;border-radius:var(--radius);background:#000">
+            <source src="${escapeHtml(post.media_url)}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        </div>`;
+    } else if (post.type === 'resource' || post.type === 'document') {
+      const ext = (post.media_name || '').split('.').pop().toLowerCase();
+      const docIcons = { pdf: '📄', txt: '📝', doc: '📝', docx: '📝', rtf: '📝' };
+      const docIcon = docIcons[ext] || '📁';
+      const docLabel = ext ? ext.toUpperCase() + ' Document' : 'Document';
       mediaHTML = `
         <div class="post-media" style="background:var(--bg2);padding:1rem;display:flex;align-items:center;gap:.85rem;border-radius:var(--radius)">
-          <div style="font-size:2rem">📄</div>
-          <div style="flex:1;min-width:0"><div class="font-bold text-sm truncate">${escapeHtml(post.media_name || 'Resource')}</div><div class="text-xs text-faint">PDF Document</div></div>
+          <div style="font-size:2rem">${docIcon}</div>
+          <div style="flex:1;min-width:0"><div class="font-bold text-sm truncate">${escapeHtml(post.media_name || 'Resource')}</div><div class="text-xs text-faint">${docLabel}</div></div>
           <a href="${escapeHtml(post.media_url)}" target="_blank" download class="btn btn-secondary btn-sm">⬇ Download</a>
         </div>`;
     }
@@ -586,25 +598,49 @@ async function handleFileSelect(input) {
 
   const isPDF   = file.type === 'application/pdf';
   const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isText  = ['txt', 'rtf'].includes(ext);
+  const isDoc   = ['doc', 'docx'].includes(ext);
 
-  if (!isPDF && !isImage) { toast('Only images and PDFs allowed', 'error'); return; }
+  const supportedTypes = isPDF || isImage || isVideo || isText || isDoc;
+  if (!supportedTypes) { toast('Unsupported file type. Allowed: images, videos, PDFs, text/doc files.', 'error'); return; }
 
   const btn = $('#upload-btn');
   btn.innerHTML = '<span class="spin">⟳</span> Uploading...';
   btn.disabled = true;
 
   try {
-    const bucket = isPDF ? 'resources' : 'uploads';
+    let bucket = 'uploads';
+    let fileType = 'image';
+    let icon = '🖼️';
+
+    if (isPDF) {
+      bucket = 'resources'; fileType = 'resource'; icon = '📄';
+    } else if (isVideo) {
+      bucket = 'uploads'; fileType = 'video'; icon = '🎬';
+    } else if (isText || isDoc) {
+      bucket = 'resources'; fileType = 'document'; icon = '📝';
+    }
+
     const result = await uploadFile(file, bucket);
-    App._pendingUpload = { url: result.url, name: file.name, type: isPDF ? 'resource' : 'image' };
+    App._pendingUpload = { url: result.url, name: file.name, type: fileType };
 
     const preview = $('#upload-preview');
     if (preview) {
       preview.classList.remove('hidden');
+      let previewContent = '';
+      if (isImage) {
+        const imgUrl = URL.createObjectURL(file);
+        previewContent = `<img src="${imgUrl}" style="max-height:80px;border-radius:6px;object-fit:cover" alt="preview">`;
+      } else if (isVideo) {
+        previewContent = `<video src="${URL.createObjectURL(file)}" style="max-height:80px;border-radius:6px" muted></video>`;
+      }
       preview.innerHTML = `
         <div class="flex items-center gap-2 p-2 rounded border" style="border-color:var(--border)">
-          <span>${isPDF ? '📄' : '🖼️'}</span>
-          <span class="text-sm truncate">${escapeHtml(file.name)}</span>
+          ${previewContent || `<span style="font-size:1.5rem">${icon}</span>`}
+          <span class="text-sm truncate" style="flex:1">${escapeHtml(file.name)}</span>
+          <span class="text-xs text-faint">${(file.size / 1024 / 1024).toFixed(1)}MB</span>
           <button class="btn btn-icon btn-sm" onclick="cancelUpload()" title="Remove">✕</button>
         </div>`;
     }
@@ -902,7 +938,9 @@ async function submitResource() {
   try {
     const result = await uploadFile(file, 'resources');
     const ext = file.name.split('.').pop().toLowerCase();
-    const fileType = ext === 'pdf' ? 'pdf' : ext === 'mp4' ? 'video' : ext === 'zip' ? 'zip' : 'doc';
+    const videoExts = ['mp4', 'mov', 'webm', 'avi'];
+    const docExts   = ['txt', 'doc', 'docx', 'rtf'];
+    const fileType = ext === 'pdf' ? 'pdf' : videoExts.includes(ext) ? 'video' : ext === 'zip' ? 'zip' : docExts.includes(ext) ? 'doc' : 'doc';
 
     await sb.from('resources').insert({
       user_id:     App.user.id,
@@ -1270,7 +1308,8 @@ async function handleSearch(query) {
   const q = query.trim();
   if (!q) { loadFeed(); return; }
 
-  const container = $('#feed-posts');
+  const container = $('#explore-results');
+  if (!container) return;
   container.innerHTML = skeletonPosts(3);
 
   const { data: posts } = await sb
@@ -1702,4 +1741,259 @@ document.addEventListener('DOMContentLoaded', () => {
       $$('.modal-overlay.open').forEach(m => m.classList.remove('open'));
     }
   });
+});
+
+
+// ── INJECTED FROM index.html ──────────────────────────────
+
+// ── PAGE NAVIGATION HELPERS ─────────────────────────────────────
+function sNav(section) {
+  // Update active state on both sidebars and mobile nav
+  $$('.nav-item, .mobile-nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === section));
+
+  // Show the right page
+  if (section === 'profile-self') {
+    if (App.user) { viewProfile(App.user.id); }
+    else { openAuthModal(); }
+    return;
+  }
+
+  // All sections live inside page-feed (single app page)
+  showPage('feed');
+
+  // Hide all sections, show the one we need
+  $$('[id^="section-"]').forEach(s => s.classList.add('hidden'));
+  const target = $(`#section-${section}`);
+  if (target) target.classList.remove('hidden');
+}
+
+function switchFeedTab(tab, el) {
+  $$('.feed-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadFeed(tab);
+}
+
+function focusComposer() {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  $('section#section-feed').classList.remove('hidden');
+  $$('[id^="section-"]').forEach(s => {
+    if (s.id !== 'section-feed') s.classList.add('hidden');
+  });
+  $('#composer-text')?.focus();
+  window.scrollTo(0, 0);
+}
+
+// ── ADMIN: Add Course ─────────────────────────────────────────
+async function submitAddCourse() {
+  if (!App.profile?.is_admin) return;
+  const title      = $('#course-title')?.value.trim();
+  const ytUrl      = $('#course-yt-url')?.value.trim();
+  const desc       = $('#course-desc')?.value.trim();
+  const instructor = $('#course-instructor')?.value.trim();
+  const level      = $('#course-level')?.value;
+  const duration   = $('#course-duration')?.value.trim();
+
+  if (!title || !ytUrl) { toast('Title and YouTube URL required', 'error'); return; }
+
+  const ytId = extractYouTubeId(ytUrl);
+  const { error } = await sb.from('courses').insert({
+    title, yt_url: ytUrl,
+    yt_thumbnail: ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null,
+    description: desc, instructor, level, duration,
+    is_published: true, created_by: App.user.id
+  });
+
+  if (error) { toast(error.message, 'error'); return; }
+  closeModal('modal-add-course');
+  toast('Course added ✓', 'success');
+  loadCourses();
+}
+
+// ── Events ─────────────────────────────────────────────────────
+async function loadEvents() {
+  const container = $('#events-list');
+  if (!container) return;
+  container.innerHTML = '<div class="skeleton sk-line full"></div>';
+
+  const { data: events } = await sb.from('events').select('*').eq('is_active', true).order('event_date', { ascending: true });
+
+  container.innerHTML = '';
+  if (!events?.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><h3>No upcoming events</h3><p>Check back soon!</p></div>';
+    return;
+  }
+
+  let myRSVPs = new Set();
+  if (App.user) {
+    const { data: rsvps } = await sb.from('event_rsvps').select('event_id').eq('user_id', App.user.id);
+    (rsvps || []).forEach(r => myRSVPs.add(r.event_id));
+  }
+
+  events.forEach(ev => {
+    const d   = new Date(ev.event_date);
+    const day = d.getDate();
+    const mon = d.toLocaleString('default', { month: 'short' }).toUpperCase();
+    const rsvpd = myRSVPs.has(ev.id);
+    container.insertAdjacentHTML('beforeend', `
+      <div style="display:flex;gap:1rem;padding:1.25rem;border-bottom:1px solid var(--border);align-items:flex-start">
+        <div style="background:var(--accent-l);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius);padding:.6rem .8rem;text-align:center;min-width:52px;flex-shrink:0">
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:var(--accent);line-height:1">${day}</div>
+          <div style="font-size:.7rem;font-weight:600;color:var(--accent);text-transform:uppercase">${mon}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-weight:700;margin-bottom:.3rem">${escapeHtml(ev.title)}</div>
+          <div style="font-size:.82rem;color:var(--text3);display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.4rem">
+            <span>📍 ${escapeHtml(ev.location)}</span>
+            <span class="badge ${ev.event_type === 'online' ? 'badge-green' : 'badge-amber'}">${ev.event_type === 'online' ? '🌐 Online' : '🏢 Physical'}</span>
+            <span>👥 ${formatNumber(ev.rsvp_count || 0)} going</span>
+          </div>
+          <p style="font-size:.85rem;color:var(--text2);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${escapeHtml(ev.description || '')}</p>
+        </div>
+        <button class="btn ${rsvpd ? 'btn-secondary' : 'btn-primary'} btn-sm" style="flex-shrink:0" onclick="toggleEventRSVP('${ev.id}', this)">
+          ${rsvpd ? '✓ Going' : 'RSVP'}
+        </button>
+      </div>`);
+  });
+}
+
+async function toggleEventRSVP(eventId, btn) {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  const { data: existing } = await sb.from('event_rsvps').select('id').eq('event_id', eventId).eq('user_id', App.user.id).single();
+  if (existing) {
+    await sb.from('event_rsvps').delete().eq('id', existing.id);
+    await sb.from('events').update({ rsvp_count: sb.rpc('decrement', {}) }).eq('id', eventId).catch(() => {});
+    btn.className = 'btn btn-primary btn-sm'; btn.style.flexShrink = '0'; btn.textContent = 'RSVP';
+    toast('RSVP cancelled', 'info');
+  } else {
+    await sb.from('event_rsvps').insert({ event_id: eventId, user_id: App.user.id });
+    btn.className = 'btn btn-secondary btn-sm'; btn.style.flexShrink = '0'; btn.textContent = '✓ Going';
+    toast('📅 RSVP confirmed!', 'success');
+  }
+}
+
+// ── Startup submit ───────────────────────────────────────────
+async function submitStartup() {
+  if (!App.user || App.isGuest) { openAuthModal(); return; }
+  const name     = $('#startup-name')?.value.trim();
+  const tagline  = $('#startup-tagline')?.value.trim();
+  const desc     = $('#startup-desc')?.value.trim();
+  const emoji    = $('#startup-emoji')?.value.trim() || '🚀';
+  const sector   = $('#startup-sector')?.value;
+  const stage    = $('#startup-stage')?.value;
+  const location = $('#startup-location')?.value.trim();
+  const website  = $('#startup-website')?.value.trim();
+
+  if (!name || !tagline) { toast('Name and tagline required', 'error'); return; }
+
+  const { error } = await sb.from('startups').insert({
+    user_id: App.user.id, name, tagline, description: desc,
+    logo_emoji: emoji, sector, stage, location, website: website || null
+  });
+
+  if (error) { toast(error.message, 'error'); return; }
+  closeModal('modal-add-startup');
+  toast('Startup listed! 🚀', 'success');
+  loadStartups();
+}
+
+// ── Admin Dashboard ──────────────────────────────────────────
+async function loadAdminDashboard() {
+  if (!App.profile?.is_admin) return;
+  $('#add-course-btn')?.classList.remove('hidden');
+  $('#add-event-btn')?.classList.remove('hidden');
+
+  const content = $('#admin-content');
+
+  const [users, posts, reports, subs] = await Promise.all([
+    sb.from('profiles').select('id', { count: 'exact', head: true }),
+    sb.from('posts').select('id', { count: 'exact', head: true }).eq('is_deleted', false),
+    sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    sb.from('subscriptions').select('amount').eq('status', 'completed'),
+  ]);
+
+  const revenue = (subs.data || []).reduce((a, s) => a + (s.amount || 0), 0);
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
+      <div class="card p-4"><div class="label">Members</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--accent)">${users.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Posts</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800">${posts.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Pending Reports</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--red)">${reports.count || 0}</div></div>
+      <div class="card p-4"><div class="label">Revenue</div><div style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;color:var(--green)">UGX ${revenue.toLocaleString()}</div></div>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-4">
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminUsers()">Manage Users</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadAdminReports()">View Reports</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-course')">+ Add Course</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-event')">+ Add Event</button>
+    </div>
+    <div id="admin-sub-content"></div>`;
+}
+
+async function loadAdminUsers() {
+  const { data: users } = await sb.from('profiles').select('id, full_name, email, subscription_status, status, created_at').order('created_at', { ascending: false }).limit(50);
+  const container = $('#admin-sub-content');
+  container.innerHTML = `
+    <h3 class="mb-3">All Members</h3>
+    ${(users || []).map(u => `
+      <div class="flex items-center gap-3 p-3 border rounded mb-2">
+        <div style="flex:1"><div class="font-bold text-sm">${escapeHtml(u.full_name || '')}</div><div class="text-xs text-faint">${escapeHtml(u.email || '')}</div></div>
+        <span class="badge ${u.subscription_status === 'active' ? 'badge-green' : 'badge-neutral'}">${u.subscription_status || 'free'}</span>
+        ${u.status === 'suspended' ? '<span class="badge badge-red">Suspended</span>' : ''}
+        <div class="flex gap-1">
+          ${u.status !== 'suspended' ? `<button class="btn btn-secondary btn-sm" onclick="adminSuspend('${u.id}')">Suspend</button>` : `<button class="btn btn-green btn-sm" onclick="adminReinstate('${u.id}')">Reinstate</button>`}
+          <button class="btn btn-danger btn-sm" onclick="adminRemove('${u.id}')">Remove</button>
+        </div>
+      </div>`).join('')}`;
+}
+
+async function loadAdminReports() {
+  const { data: reports } = await sb.from('reports').select('*, reporter:reporter_id(full_name), reported_post:reported_post_id(body)').eq('status', 'pending');
+  const container = $('#admin-sub-content');
+  container.innerHTML = `<h3 class="mb-3">Pending Reports (${reports?.length || 0})</h3>
+    ${(reports || []).map(r => `
+      <div class="card p-4 mb-2">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge badge-red">${escapeHtml(r.report_type)}</span>
+          <span class="text-xs text-faint">by ${escapeHtml(r.reporter?.full_name || 'Unknown')} · ${formatTime(r.created_at)}</span>
+        </div>
+        ${r.reported_post ? `<div class="text-sm text-muted mb-2 p-2 rounded" style="background:var(--bg2)">"${escapeHtml((r.reported_post.body||'').substring(0,100))}..."</div>` : ''}
+        <div class="flex gap-2">
+          ${r.reported_post_id ? `<button class="btn btn-danger btn-sm" onclick="adminDeletePostFromReport('${r.reported_post_id}','${r.id}')">Remove Post</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="adminResolveReport('${r.id}')">Dismiss</button>
+        </div>
+      </div>`).join('') || '<div class="empty-state"><p>No pending reports. ✓</p></div>'}`;
+}
+
+async function adminSuspend(uid) {
+  if (!confirm('Suspend this user?')) return;
+  await sb.from('profiles').update({ status: 'suspended' }).eq('id', uid);
+  toast('User suspended', 'success'); loadAdminUsers();
+}
+async function adminReinstate(uid) {
+  await sb.from('profiles').update({ status: 'active' }).eq('id', uid);
+  toast('User reinstated', 'success'); loadAdminUsers();
+}
+async function adminRemove(uid) {
+  if (!confirm('Permanently remove this user? This cannot be undone.')) return;
+  await sb.from('profiles').update({ status: 'deleted' }).eq('id', uid);
+  toast('User removed', 'success'); loadAdminUsers();
+}
+async function adminDeletePostFromReport(postId, reportId) {
+  await sb.from('posts').update({ is_deleted: true }).eq('id', postId);
+  await adminResolveReport(reportId);
+  toast('Post removed', 'success');
+}
+async function adminResolveReport(reportId) {
+  await sb.from('reports').update({ status: 'resolved', resolved_by: App.user.id, resolved_at: new Date().toISOString() }).eq('id', reportId);
+  toast('Report resolved', 'success'); loadAdminReports();
+}
+
+// Make admin features visible when logged in as admin
+window.addEventListener('userLoaded', (e) => {
+  if (e.detail?.is_admin) {
+    $('#add-course-btn')?.classList.remove('hidden');
+    $('#add-event-btn')?.classList.remove('hidden');
+    $('#nav-admin-label')?.classList.remove('hidden');
+    $('#nav-admin-item')?.classList.remove('hidden');
+  }
 });
